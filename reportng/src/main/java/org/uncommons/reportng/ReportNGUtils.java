@@ -15,16 +15,23 @@
 //=============================================================================
 package org.uncommons.reportng;
 
+import java.io.File;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.testng.IInvokedMethod;
 import org.testng.ISuite;
 import org.testng.ISuiteResult;
@@ -33,6 +40,11 @@ import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
 import org.testng.Reporter;
 import org.testng.SkipException;
+import org.testng.TestNG;
+import org.apache.commons.io.FileUtils;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
 
 /**
  * Utility class that provides various helper methods that can be invoked
@@ -49,6 +61,7 @@ public class ReportNGUtils
      * @param context The test results.
      * @return The sum of the test durations.
      */
+    
     public long getDuration(ITestContext context)
     {
         long duration = getDuration(context.getPassedConfigurations().getAllResults());
@@ -60,9 +73,69 @@ public class ReportNGUtils
         duration += getDuration(context.getFailedTests().getAllResults());
         return duration;
     }
+    
+    /*
+     * http://blog.csdn.net/qq744746842/article/details/49744647 这篇文档的方法一
+     */
+    public String getImageString(String s)
+    {
+        String regex = "(<img(.*?)/>)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(s);
+        while (matcher.find()) {
+            String group = matcher.group(1);
+            //可根据实际情况多个图片 全部一起return
+            return group;
+        }
+        return "";
+    }
 
 
-    /**
+    /*
+     * http://blog.csdn.net/qq744746842/article/details/49744647 这篇文档的方法二
+     */
+    public String removeImage(String s)
+    {
+        return  s.replaceAll("<img(.*?)/>","");
+    }
+    
+    /*
+     * 方法一
+     */
+    public static String storeImage(WebDriver driver, String baseDir){
+    	String imgName = generateRandomFilename();
+    	File srcFile = ((TakesScreenshot)driver).getScreenshotAs(OutputType.FILE);
+    	try {
+			FileUtils.copyFile(srcFile, new File(baseDir+File.separator+imgName));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	return imgName;
+    }
+    
+
+    /* 
+     * 生成随机文件名 
+     */  
+    private static String generateRandomFilename() {
+    	String RandomFilename = "";  
+        Random rand = new Random();//生成随机数  
+        int random = rand.nextInt();  
+          
+        Calendar calCurrent = Calendar.getInstance();  
+        int intDay = calCurrent.get(Calendar.DATE);  
+        int intMonth = calCurrent.get(Calendar.MONTH) + 1;  
+        int intYear = calCurrent.get(Calendar.YEAR);  
+        String now = String.valueOf(intYear) + "_" + String.valueOf(intMonth) + "_" +  
+        String.valueOf(intDay) + "_";  
+          
+        RandomFilename = now + String.valueOf(random > 0 ? random : ( -1) * random) + ".";  
+          
+        return RandomFilename;  
+	}
+
+	/**
      * Returns the aggregate of the elapsed times for each test result.
      * @param results A set of test results.
      * @return The sum of the test durations.
@@ -439,9 +512,9 @@ public class ReportNGUtils
         throw new IllegalStateException("Could not find matching end time.");
     }
 
-
     public String formatPercentage(int numerator, int denominator)
     {
         return PERCENTAGE_FORMAT.format(numerator / (double) denominator);
     }
 }
+
